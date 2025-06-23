@@ -137,14 +137,15 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
-                // FALLBACK CONFIG: Ganti dengan konfigurasi Firebase Anda jika perlu
-                apiKey: "AIzaSyYOUR_API_KEY_HERE",
-                authDomain: "your-project-id.firebaseapp.com",
-                projectId: "your-project-id",
-                storageBucket: "your-project-id.appspot.com",
-                messagingSenderId: "your-sender-id",
-                appId: "your-app-id"
-            };
+                const firebaseConfig = {
+    apiKey: "AIzaSyB9X4NarIR047fqYEEexBBwtvaRkZWm5Aw",
+    authDomain: "oceanindo-test.firebaseapp.com",
+    projectId: "oceanindo-test",
+    storageBucket: "oceanindo-test.firebasestorage.app",
+    messagingSenderId: "436108196304",
+    appId: "1:436108196304:web:ada0a30514f712de5a61d5",
+    measurementId: "G-X7GJXW4G94"
+  };
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
