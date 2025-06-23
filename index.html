@@ -20,13 +20,6 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Sembunyikan panah di input number */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
-        input[type=number] { -moz-appearance: textfield; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -228,35 +221,65 @@
             progressText.textContent = `Pertanyaan ${currentQuestionIndex + 1} dari ${questions.length}`;
         }
         
-        function goToNextQuestion() {
+        function handleNextButtonClick() {
+            // Simpan jawaban sebelum melakukan apa pun
             const selectedAnswer = questionDisplay.querySelector('input[name="q_answer"]:checked');
-            if (!selectedAnswer) { errorMessage.textContent = 'Silakan pilih jawaban Anda terlebih dahulu.'; return; }
+            if (!selectedAnswer) { 
+                errorMessage.textContent = 'Silakan pilih jawaban Anda terlebih dahulu.'; 
+                return; 
+            }
             errorMessage.textContent = '';
             userAnswers[currentQuestionIndex] = parseInt(selectedAnswer.value);
-
+            
+            // Periksa apakah ini pertanyaan terakhir atau bukan
             if (currentQuestionIndex < questions.length - 1) {
+                // Jika bukan terakhir, langsung ke pertanyaan berikutnya
                 currentQuestionIndex++;
                 renderCurrentQuestion();
             } else {
-                // PERBAIKAN: Logika pemeriksaan akhir yang lebih jelas
-                const allAnswered = userAnswers.every(answer => answer !== null);
-                if (allAnswered) {
-                    errorMessage.textContent = '';
-                    calculateAndShowResults();
-                } else {
-                    const missingQuestions = [];
-                    userAnswers.forEach((answer, index) => {
-                        if (answer === null) {
-                            missingQuestions.push(index + 1);
-                        }
-                    });
-                    console.error("Pertanyaan yang terlewat (nomor):", missingQuestions.join(', '));
-                    alert(`TES BELUM LENGKAP!\n\nAnda belum menjawab pertanyaan nomor: ${missingQuestions.join(', ')}.\n\nSilakan gunakan tombol 'Sebelumnya' untuk kembali dan melengkapi jawaban Anda.`);
+                // Jika ini adalah klik terakhir ("Selesai & Lihat Hasil")
+                handleSubmit();
+            }
+        }
+        
+        // PERBAIKAN: Fungsi terpisah untuk submit hasil akhir
+        function handleSubmit() {
+            // Beri feedback visual bahwa proses sedang berjalan
+            nextBtn.disabled = true;
+            nextBtn.textContent = 'Memproses...';
+
+            const missingQuestions = [];
+            userAnswers.forEach((answer, index) => {
+                if (answer === null) {
+                    missingQuestions.push(index + 1);
                 }
+            });
+            
+            if (missingQuestions.length > 0) {
+                console.error("Pertanyaan yang terlewat (nomor):", missingQuestions.join(', '));
+                alert(`TES BELUM LENGKAP!\n\nAnda belum menjawab pertanyaan nomor: ${missingQuestions.join(', ')}.\n\nSilakan gunakan tombol 'Sebelumnya' untuk kembali dan melengkapi jawaban Anda.`);
+                
+                // Kembalikan tombol ke keadaan semula jika ada error
+                nextBtn.disabled = false;
+                nextBtn.textContent = 'Selesai & Lihat Hasil';
+            } else {
+                errorMessage.textContent = '';
+                calculateAndShowResults();
             }
         }
 
-        function goToPrevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderCurrentQuestion(); } }
+        function goToPrevQuestion() { 
+            // Simpan jawaban saat ini jika ada, sebelum kembali
+            const selectedAnswer = questionDisplay.querySelector('input[name="q_answer"]:checked');
+            if (selectedAnswer) {
+                userAnswers[currentQuestionIndex] = parseInt(selectedAnswer.value);
+            }
+            
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--; 
+                renderCurrentQuestion(); 
+            }
+        }
 
         async function calculateAndShowResults() {
             const scores = { O: 0, C: 0, E: 0, A: 0, N: 0 };
@@ -294,7 +317,6 @@
             container.innerHTML = '<p class="text-center text-slate-500">Memuat hasil...</p>';
             
             try {
-                // PERBAIKAN: Menambahkan query untuk mengurutkan data dari yang terbaru
                 const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'ocean_results');
                 const q = query(resultsCollection, orderBy("timestamp", "desc"));
                 const querySnapshot = await getDocs(q);
@@ -317,7 +339,7 @@
             }
         }
 
-        nextBtn.addEventListener('click', goToNextQuestion);
+        nextBtn.addEventListener('click', handleNextButtonClick); // Menggunakan fungsi handler baru
         prevBtn.addEventListener('click', goToPrevQuestion);
 
     </script>
