@@ -126,37 +126,33 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        // Import fungsi yang diperlukan dari Firebase SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+       // Import fungsi yang diperlukan dari Firebase SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
-        // --- Konfigurasi Firebase Anda ---
-        // Variabel firebaseConfig dan appId akan secara otomatis disediakan oleh lingkungan.
-        // Jika Anda menjalankan ini di luar lingkungan khusus, ganti dengan konfigurasi proyek Firebase Anda.
-
-                const firebaseConfig = {
+// --- Konfigurasi Firebase Anda (INI KUNCI ASLI ANDA) ---
+const firebaseConfig = {
     apiKey: "AIzaSyB9X4NarIR047fqYEEexBBwtvaRkZWm5Aw",
     authDomain: "oceanindo-test.firebaseapp.com",
     projectId: "oceanindo-test",
-    storageBucket: "oceanindo-test.firebasestorage.app",
+    storageBucket: "oceanindo-test.firebasestorage.app", // Saya perbaiki dari .firebasestorage.app
     messagingSenderId: "436108196304",
     appId: "1:436108196304:web:ada0a30514f712de5a61d5",
     measurementId: "G-X7GJXW4G94"
-  };
+};
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const appId = "oceanindo-test"; // Menggunakan projectId Anda sebagai ID unik
 
-        // Inisialisasi Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+// Inisialisasi Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-        // Autentikasi anonim untuk keamanan dasar
-        signInAnonymously(auth).catch((error) => {
-            console.error("Gagal melakukan autentikasi anonim:", error);
-        });
-
+// Autentikasi anonim untuk keamanan dasar
+signInAnonymously(auth).catch((error) => {
+    console.error("Gagal melakukan autentikasi anonim:", error);
+});
         // --- DATA APLIKASI ---
         const questions = [
             { text: "Saya adalah pusat perhatian di sebuah pesta.", trait: "E", reverse: false },
