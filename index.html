@@ -124,96 +124,64 @@
 
     </div>
 
+    <!-- Overlay untuk Error Konfigurasi Firebase -->
+    <div id="firebase-error-overlay" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg text-center fade-in">
+            <h2 class="text-2xl font-bold text-red-600 mb-4">Kesalahan Konfigurasi Firebase</h2>
+            <p class="text-slate-700 mb-6">Layanan Autentikasi Anonim untuk proyek ini belum diaktifkan. Aplikasi tidak dapat terhubung ke database sebelum ini diperbaiki.</p>
+            <div class="text-left bg-slate-50 p-4 rounded-md border border-slate-200">
+                <h3 class="font-bold mb-2">Langkah-langkah untuk Memperbaiki:</h3>
+                <ol class="list-decimal list-inside space-y-2 text-slate-600">
+                    <li>Buka **Firebase Console** proyek Anda.</li>
+                    <li>Pergi ke menu **Build** > **Authentication**.</li>
+                    <li>Pilih tab **Sign-in method**.</li>
+                    <li>Klik pada **Anonymous** (Anonim) dari daftar penyedia.</li>
+                    <li>Aktifkan (Enable) tombolnya lalu klik **Save**.</li>
+                </ol>
+            </div>
+            <p class="mt-6 text-sm text-slate-500">Setelah Anda mengaktifkannya, silakan muat ulang (refresh) halaman ini.</p>
+        </div>
+    </div>
+
+
     <!-- Firebase SDK -->
     <script type="module">
-       // Import fungsi yang diperlukan dari Firebase SDK
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        // Import fungsi yang diperlukan dari Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, Timestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
-// --- Konfigurasi Firebase Anda (INI KUNCI ASLI ANDA) ---
-const firebaseConfig = {
-    apiKey: "AIzaSyB9X4NarIR047fqYEEexBBwtvaRkZWm5Aw",
-    authDomain: "oceanindo-test.firebaseapp.com",
-    projectId: "oceanindo-test",
-    storageBucket: "oceanindo-test.firebasestorage.app", // Saya perbaiki dari .firebasestorage.app
-    messagingSenderId: "436108196304",
-    appId: "1:436108196304:web:ada0a30514f712de5a61d5",
-    measurementId: "G-X7GJXW4G94"
-};
-
-const appId = "oceanindo-test"; // Menggunakan projectId Anda sebagai ID unik
-
-// Inisialisasi Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Autentikasi anonim untuk keamanan dasar
-signInAnonymously(auth).catch((error) => {
-    console.error("Gagal melakukan autentikasi anonim:", error);
-});
-        // --- DATA APLIKASI ---
-        const questions = [
-            { text: "Saya adalah pusat perhatian di sebuah pesta.", trait: "E", reverse: false },
-            { text: "Saya tidak terlalu peduli dengan orang lain.", trait: "A", reverse: true },
-            { text: "Saya selalu menyiapkan segala sesuatu.", trait: "C", reverse: false },
-            { text: "Saya jarang merasa stres.", trait: "N", reverse: true },
-            { text: "Saya memiliki kosakata yang kaya.", trait: "O", reverse: false },
-            { text: "Saya tidak banyak bicara.", trait: "E", reverse: true },
-            { text: "Saya tertarik pada orang lain.", trait: "A", reverse: false },
-            { text: "Saya sering meninggalkan barang-barang saya berantakan.", trait: "C", reverse: true },
-            { text: "Saya santai hampir sepanjang waktu.", trait: "N", reverse: true },
-            { text: "Saya kesulitan memahami ide-ide abstrak.", trait: "O", reverse: true },
-            { text: "Saya merasa nyaman berada di antara orang-orang.", trait: "E", reverse: false },
-            { text: "Saya sering menghina orang lain.", trait: "A", reverse: true },
-            { text: "Saya memperhatikan detail.", trait: "C", reverse: false },
-            { text: "Saya sering merasa khawatir tentang banyak hal.", trait: "N", reverse: false },
-            { text: "Saya memiliki imajinasi yang hidup.", trait: "O", reverse: false },
-            { text: "Saya lebih suka menyendiri.", trait: "E", reverse: true },
-            { text: "Saya bisa merasakan emosi orang lain.", trait: "A", reverse: false },
-            { text: "Saya sering membuat kekacauan.", trait: "C", reverse: true },
-            { text: "Saya jarang merasa sedih atau murung.", trait: "N", reverse: true },
-            { text: "Saya tidak tertarik pada ide-ide abstrak.", trait: "O", reverse: true },
-            { text: "Saya memulai percakapan.", trait: "E", reverse: false },
-            { text: "Saya tidak terlalu tertarik pada masalah orang lain.", trait: "A", reverse: true },
-            { text: "Saya langsung mengerjakan pekerjaan saya.", trait: "C", reverse: false },
-            { text: "Saya mudah merasa kesal.", trait: "N", reverse: false },
-            { text: "Saya punya ide-ide yang cemerlang.", trait: "O", reverse: false },
-            { text: "Saya menghindari menjadi pusat perhatian.", trait: "E", reverse: true },
-            { text: "Saya memiliki hati yang lembut.", trait: "A", reverse: false },
-            { text: "Saya sering lupa mengembalikan barang ke tempatnya.", trait: "C", reverse: true },
-            { text: "Saya sangat mudah emosi.", trait: "N", reverse: false },
-            { text: "Saya tidak memiliki imajinasi yang bagus.", trait: "O", reverse: true },
-            { text: "Saya banyak bicara di berbagai situasi.", trait: "E", reverse: false },
-            { text: "Saya benar-benar peduli pada orang lain.", trait: "A", reverse: false },
-            { text: "Saya suka keteraturan.", trait: "C", reverse: false },
-            { text: "Suasana hati saya sering berubah-ubah.", trait: "N", reverse: false },
-            { text: "Saya cepat memahami sesuatu.", trait: "O", reverse: false },
-            { text: "Saya tidak suka menarik perhatian orang ke diri saya.", trait: "E", reverse: true },
-            { text: "Saya meluangkan waktu untuk orang lain.", trait: "A", reverse: false },
-            { text: "Saya orang yang ceroboh.", trait: "C", reverse: true },
-            { text: "Saya sering merasa galau.", trait: "N", reverse: false },
-            { text: "Saya kurang kreatif.", trait: "O", reverse: true },
-            { text: "Saya tidak keberatan menjadi pusat perhatian.", trait: "E", reverse: false },
-            { text: "Saya merasakan penderitaan orang lain.", trait: "A", reverse: false },
-            { text: "Saya adalah orang yang teliti dan selalu rapi.", trait: "C", reverse: false },
-            { text: "Saya jarang merasa cemas.", trait: "N", reverse: true },
-            { text: "Saya pandai menggunakan kata-kata yang sulit.", trait: "O", reverse: false },
-            { text: "Saya tetap di latar belakang (tidak menonjol).", trait: "E", reverse: true },
-            { text: "Saya sering merasa tidak simpati pada orang lain.", trait: "A", reverse: true },
-            { text: "Saya terkadang mengabaikan tugas-tugas saya.", trait: "C", reverse: true },
-            { text: "Saya memiliki emosi yang stabil.", trait: "N", reverse: true },
-            { text: "Saya sulit membayangkan sesuatu.", trait: "O", reverse: true }
-        ];
-        
-        const descriptions = { 
-            O: { name: "Openness (Keterbukaan)", high: "Anda sangat imajinatif, kreatif, dan penuh rasa ingin tahu. Anda menikmati ide-ide baru, seni, dan pengalaman yang tidak biasa. Anda tidak takut dengan perubahan.", low: "Anda praktis, membumi, dan lebih menyukai hal-hal yang sudah dikenal dan rutin. Anda menghargai tradisi dan hal-hal yang konkret." }, 
-            C: { name: "Conscientiousness (Kehati-hatian)", high: "Anda sangat teratur, disiplin, berorientasi pada tujuan, dan dapat diandalkan. Anda seorang perencana yang baik dan sangat teliti.", low: "Anda lebih spontan, fleksibel, dan santai. Anda kurang suka dengan struktur yang kaku dan kadang bisa ceroboh atau menunda pekerjaan." }, 
-            E: { name: "Extraversion (Ekstraversi)", high: "Anda mendapatkan energi dari interaksi sosial. Anda suka keramaian, banyak bicara, antusias, dan senang menjadi pusat perhatian.", low: "Anda menghabiskan energi saat bersosialisasi dan butuh waktu sendiri untuk 'mengisi ulang'. Anda lebih pendiam, reflektif, dan lebih suka interaksi mendalam dengan sedikit orang." }, 
-            A: { name: "Agreeableness (Keramahan)", high: "Anda sangat kooperatif, penuh empati, suka menolong, dan mudah percaya. Anda cenderung menghindari konflik dan menjaga keharmonisan.", low: "Anda lebih kompetitif, analitis, dan skeptis. Anda tidak takut menyuarakan pendapat yang berbeda atau berdebat demi kebenaran." }, 
-            N: { name: "Neuroticism (Kestabilan Emosi)", high: "Anda rentan terhadap stres dan emosi negatif seperti cemas, sedih, dan marah. Anda cenderung overthinking dan mudah khawatir.", low: "Anda sangat tenang, tangguh, dan stabil secara emosional. Anda tidak mudah panik di bawah tekanan dan cepat pulih dari pengalaman negatif." } 
+        // --- Konfigurasi Firebase Anda ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9X4NarIR047fqYEEexBBwtvaRkZWm5Aw",
+            authDomain: "oceanindo-test.firebaseapp.com",
+            projectId: "oceanindo-test",
+            storageBucket: "oceanindo-test.appspot.com",
+            messagingSenderId: "436108196304",
+            appId: "1:436108196304:web:ada0a30514f712de5a61d5",
+            measurementId: "G-X7GJXW4G94"
         };
+        
+        const appId = firebaseConfig.projectId;
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Autentikasi anonim untuk keamanan dasar
+        signInAnonymously(auth).catch((error) => {
+            console.error("Gagal melakukan autentikasi anonim:", error);
+            if (error.code === 'auth/configuration-not-found') {
+                document.getElementById('firebase-error-overlay').classList.remove('hidden');
+            } else {
+                 alert("Terjadi kesalahan koneksi ke Firebase yang tidak terduga: " + error.message);
+            }
+        });
+
+        // --- DATA APLIKASI ---
+        const questions = [ { text: "Saya adalah pusat perhatian di sebuah pesta.", trait: "E", reverse: false }, { text: "Saya tidak terlalu peduli dengan orang lain.", trait: "A", reverse: true }, { text: "Saya selalu menyiapkan segala sesuatu.", trait: "C", reverse: false }, { text: "Saya jarang merasa stres.", trait: "N", reverse: true }, { text: "Saya memiliki kosakata yang kaya.", trait: "O", reverse: false }, { text: "Saya tidak banyak bicara.", trait: "E", reverse: true }, { text: "Saya tertarik pada orang lain.", trait: "A", reverse: false }, { text: "Saya sering meninggalkan barang-barang saya berantakan.", trait: "C", reverse: true }, { text: "Saya santai hampir sepanjang waktu.", trait: "N", reverse: true }, { text: "Saya kesulitan memahami ide-ide abstrak.", trait: "O", reverse: true }, { text: "Saya merasa nyaman berada di antara orang-orang.", trait: "E", reverse: false }, { text: "Saya sering menghina orang lain.", trait: "A", reverse: true }, { text: "Saya memperhatikan detail.", trait: "C", reverse: false }, { text: "Saya sering merasa khawatir tentang banyak hal.", trait: "N", reverse: false }, { text: "Saya memiliki imajinasi yang hidup.", trait: "O", reverse: false }, { text: "Saya lebih suka menyendiri.", trait: "E", reverse: true }, { text: "Saya bisa merasakan emosi orang lain.", trait: "A", reverse: false }, { text: "Saya sering membuat kekacauan.", trait: "C", reverse: true }, { text: "Saya jarang merasa sedih atau murung.", trait: "N", reverse: true }, { text: "Saya tidak tertarik pada ide-ide abstrak.", trait: "O", reverse: true }, { text: "Saya memulai percakapan.", trait: "E", reverse: false }, { text: "Saya tidak terlalu tertarik pada masalah orang lain.", trait: "A", reverse: true }, { text: "Saya langsung mengerjakan pekerjaan saya.", trait: "C", reverse: false }, { text: "Saya mudah merasa kesal.", trait: "N", reverse: false }, { text: "Saya punya ide-ide yang cemerlang.", trait: "O", reverse: false }, { text: "Saya menghindari menjadi pusat perhatian.", trait: "E", reverse: true }, { text: "Saya memiliki hati yang lembut.", trait: "A", reverse: false }, { text: "Saya sering lupa mengembalikan barang ke tempatnya.", trait: "C", reverse: true }, { text: "Saya sangat mudah emosi.", trait: "N", reverse: false }, { text: "Saya tidak memiliki imajinasi yang bagus.", trait: "O", reverse: true }, { text: "Saya banyak bicara di berbagai situasi.", trait: "E", reverse: false }, { text: "Saya benar-benar peduli pada orang lain.", trait: "A", reverse: false }, { text: "Saya suka keteraturan.", trait: "C", reverse: false }, { text: "Suasana hati saya sering berubah-ubah.", trait: "N", reverse: false }, { text: "Saya cepat memahami sesuatu.", trait: "O", reverse: false }, { text: "Saya tidak suka menarik perhatian orang ke diri saya.", trait: "E", reverse: true }, { text: "Saya meluangkan waktu untuk orang lain.", trait: "A", reverse: false }, { text: "Saya orang yang ceroboh.", trait: "C", reverse: true }, { text: "Saya sering merasa galau.", trait: "N", reverse: false }, { text: "Saya kurang kreatif.", trait: "O", reverse: true }, { text: "Saya tidak keberatan menjadi pusat perhatian.", trait: "E", reverse: false }, { text: "Saya merasakan penderitaan orang lain.", trait: "A", reverse: false }, { text: "Saya adalah orang yang teliti dan selalu rapi.", trait: "C", reverse: false }, { text: "Saya jarang merasa cemas.", trait: "N", reverse: true }, { text: "Saya pandai menggunakan kata-kata yang sulit.", trait: "O", reverse: false }, { text: "Saya tetap di latar belakang (tidak menonjol).", trait: "E", reverse: true }, { text: "Saya sering merasa tidak simpati pada orang lain.", trait: "A", reverse: true }, { text: "Saya terkadang mengabaikan tugas-tugas saya.", trait: "C", reverse: true }, { text: "Saya memiliki emosi yang stabil.", trait: "N", reverse: true }, { text: "Saya sulit membayangkan sesuatu.", trait: "O", reverse: true }];
+        const descriptions = { O: { name: "Openness (Keterbukaan)", high: "Anda sangat imajinatif, kreatif, dan penuh rasa ingin tahu. Anda menikmati ide-ide baru, seni, dan pengalaman yang tidak biasa. Anda tidak takut dengan perubahan.", low: "Anda praktis, membumi, dan lebih menyukai hal-hal yang sudah dikenal dan rutin. Anda menghargai tradisi dan hal-hal yang konkret." }, C: { name: "Conscientiousness (Kehati-hatian)", high: "Anda sangat teratur, disiplin, berorientasi pada tujuan, dan dapat diandalkan. Anda seorang perencana yang baik dan sangat teliti.", low: "Anda lebih spontan, fleksibel, dan santai. Anda kurang suka dengan struktur yang kaku dan kadang bisa ceroboh atau menunda pekerjaan." }, E: { name: "Extraversion (Ekstraversi)", high: "Anda mendapatkan energi dari interaksi sosial. Anda suka keramaian, banyak bicara, antusias, dan senang menjadi pusat perhatian.", low: "Anda menghabiskan energi saat bersosialisasi dan butuh waktu sendiri untuk 'mengisi ulang'. Anda lebih pendiam, reflektif, dan lebih suka interaksi mendalam dengan sedikit orang." }, A: { name: "Agreeableness (Keramahan)", high: "Anda sangat kooperatif, penuh empati, suka menolong, dan mudah percaya. Anda cenderung menghindari konflik dan menjaga keharmonisan.", low: "Anda lebih kompetitif, analitis, dan skeptis. Anda tidak takut menyuarakan pendapat yang berbeda atau berdebat demi kebenaran." }, N: { name: "Neuroticism (Kestabilan Emosi)", high: "Anda rentan terhadap stres dan emosi negatif seperti cemas, sedih, dan marah. Anda cenderung overthinking dan mudah khawatir.", low: "Anda sangat tenang, tangguh, dan stabil secara emosional. Anda tidak mudah panik di bawah tekanan dan cepat pulih dari pengalaman negatif." } };
         
         let currentQuestionIndex = 0;
         let userAnswers = new Array(questions.length).fill(null);
@@ -234,57 +202,23 @@ signInAnonymously(auth).catch((error) => {
         const hasilContainer = document.getElementById('hasil-container');
         const recruiterContainer = document.getElementById('recruiter-container');
 
-        // Fungsi untuk Navigasi antar Halaman
-        document.getElementById('start-test-btn').addEventListener('click', () => {
-            modeSelection.classList.add('hidden');
-            nameInputContainer.classList.remove('hidden');
-        });
-
-        document.getElementById('view-results-btn').addEventListener('click', () => {
-            modeSelection.classList.add('hidden');
-            fetchAndDisplayAllResults();
-            recruiterContainer.classList.remove('hidden');
-        });
-
-        beginTestBtn.addEventListener('click', () => {
-            if (candidateNameInput.value.trim() === '') {
-                nameError.textContent = 'Nama tidak boleh kosong.';
-                return;
-            }
-            nameError.textContent = '';
-            candidateName = candidateNameInput.value.trim();
-            nameInputContainer.classList.add('hidden');
-            kuesionerContainer.classList.remove('hidden');
-            renderCurrentQuestion();
-        });
+        // Fungsi Navigasi
+        document.getElementById('start-test-btn').addEventListener('click', () => { modeSelection.classList.add('hidden'); nameInputContainer.classList.remove('hidden'); });
+        document.getElementById('view-results-btn').addEventListener('click', () => { modeSelection.classList.add('hidden'); fetchAndDisplayAllResults(); recruiterContainer.classList.remove('hidden'); });
+        beginTestBtn.addEventListener('click', () => { if (candidateNameInput.value.trim() === '') { nameError.textContent = 'Nama tidak boleh kosong.'; return; } nameError.textContent = ''; candidateName = candidateNameInput.value.trim(); nameInputContainer.classList.add('hidden'); kuesionerContainer.classList.remove('hidden'); renderCurrentQuestion(); });
 
         // --- Fungsi Logika Tes ---
         function renderCurrentQuestion() {
             const question = questions[currentQuestionIndex];
             questionDisplay.innerHTML = `<p class="text-xl font-medium mb-6 text-center">${question.text}</p><div class="flex flex-wrap justify-center gap-2 skala-container" role="radiogroup">${[1, 2, 3, 4, 5].map(val => `<input type="radio" name="q_answer" value="${val}" id="q_answer_${val}" class="sr-only"><label for="q_answer_${val}" class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center text-xl font-bold border-2 border-slate-300 rounded-full cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:scale-105">${val}</label>`).join('')}</div>`;
-            questionDisplay.classList.remove('fade-in'); 
-            void questionDisplay.offsetWidth; // Memicu reflow untuk restart animasi
-            questionDisplay.classList.add('fade-in');
-            
-            if (userAnswers[currentQuestionIndex] !== null) { 
-                const savedAnswer = questionDisplay.querySelector(`input[value="${userAnswers[currentQuestionIndex]}"]`); 
-                if (savedAnswer) { savedAnswer.checked = true; }
-            }
-            updateNavigation(); 
-            updateProgress();
+            questionDisplay.classList.remove('fade-in'); void questionDisplay.offsetWidth; questionDisplay.classList.add('fade-in');
+            if (userAnswers[currentQuestionIndex] !== null) { const savedAnswer = questionDisplay.querySelector(`input[value="${userAnswers[currentQuestionIndex]}"]`); if (savedAnswer) { savedAnswer.checked = true; } }
+            updateNavigation(); updateProgress();
         }
         
         function updateNavigation() {
             prevBtn.disabled = currentQuestionIndex === 0;
-            if (currentQuestionIndex === questions.length - 1) { 
-                nextBtn.textContent = 'Selesai & Lihat Hasil'; 
-                nextBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700'); 
-                nextBtn.classList.add('bg-green-600', 'hover:bg-green-700'); 
-            } else { 
-                nextBtn.textContent = 'Berikutnya'; 
-                nextBtn.classList.remove('bg-green-600', 'hover:bg-green-700'); 
-                nextBtn.classList.add('bg-blue-600', 'hover:bg-blue-700'); 
-            }
+            if (currentQuestionIndex === questions.length - 1) { nextBtn.textContent = 'Selesai & Lihat Hasil'; nextBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700'); nextBtn.classList.add('bg-green-600', 'hover:bg-green-700'); } else { nextBtn.textContent = 'Berikutnya'; nextBtn.classList.remove('bg-green-600', 'hover:bg-green-700'); nextBtn.classList.add('bg-blue-600', 'hover:bg-blue-700'); }
         }
         
         function updateProgress() {
@@ -296,51 +230,47 @@ signInAnonymously(auth).catch((error) => {
         
         function goToNextQuestion() {
             const selectedAnswer = questionDisplay.querySelector('input[name="q_answer"]:checked');
-            if (!selectedAnswer) { 
-                errorMessage.textContent = 'Silakan pilih jawaban Anda terlebih dahulu.'; 
-                return; 
-            }
+            if (!selectedAnswer) { errorMessage.textContent = 'Silakan pilih jawaban Anda terlebih dahulu.'; return; }
             errorMessage.textContent = '';
             userAnswers[currentQuestionIndex] = parseInt(selectedAnswer.value);
-            if (currentQuestionIndex < questions.length - 1) { 
-                currentQuestionIndex++; 
-                renderCurrentQuestion(); 
-            } else { 
-                calculateAndShowResults(); 
+
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                renderCurrentQuestion();
+            } else {
+                // PERBAIKAN: Logika pemeriksaan akhir yang lebih jelas
+                const allAnswered = userAnswers.every(answer => answer !== null);
+                if (allAnswered) {
+                    errorMessage.textContent = '';
+                    calculateAndShowResults();
+                } else {
+                    const missingQuestions = [];
+                    userAnswers.forEach((answer, index) => {
+                        if (answer === null) {
+                            missingQuestions.push(index + 1);
+                        }
+                    });
+                    console.error("Pertanyaan yang terlewat (nomor):", missingQuestions.join(', '));
+                    alert(`TES BELUM LENGKAP!\n\nAnda belum menjawab pertanyaan nomor: ${missingQuestions.join(', ')}.\n\nSilakan gunakan tombol 'Sebelumnya' untuk kembali dan melengkapi jawaban Anda.`);
+                }
             }
         }
 
-        function goToPrevQuestion() { 
-            if (currentQuestionIndex > 0) { 
-                currentQuestionIndex--; 
-                renderCurrentQuestion(); 
-            }
-        }
+        function goToPrevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderCurrentQuestion(); } }
 
         async function calculateAndShowResults() {
-            // Perhitungan skor
             const scores = { O: 0, C: 0, E: 0, A: 0, N: 0 };
-            questions.forEach((q, index) => { 
-                let score = userAnswers[index]; 
-                if (q.reverse) { score = 6 - score; } 
-                scores[q.trait] += score; 
-            });
-
-            // Menyimpan hasil ke Firestore
+            questions.forEach((q, index) => { let score = userAnswers[index]; if (q.reverse) { score = 6 - score; } scores[q.trait] += score; });
+            
             try {
                 const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'ocean_results');
-                await addDoc(resultsCollection, {
-                    name: candidateName,
-                    scores: scores,
-                    timestamp: Timestamp.now()
-                });
+                await addDoc(resultsCollection, { name: candidateName, scores: scores, timestamp: Timestamp.now() });
                 console.log("Hasil berhasil disimpan ke Firestore.");
             } catch (error) {
                 console.error("Gagal menyimpan hasil: ", error);
                 alert("Terjadi kesalahan saat menyimpan hasil Anda. Namun, Anda masih bisa melihat hasilnya di layar ini.");
             }
             
-            // Menampilkan hasil
             kuesionerContainer.classList.add('hidden');
             hasilContainer.classList.remove('hidden');
             
@@ -349,87 +279,33 @@ signInAnonymously(auth).catch((error) => {
 
             const traitOrder = ['O', 'C', 'E', 'A', 'N'];
             traitOrder.forEach(trait => {
-                const score = scores[trait]; 
-                const isHigh = score > 30; 
-                const desc = descriptions[trait];
-                const card = document.createElement('div'); 
-                card.className = 'bg-slate-50 p-5 rounded-lg border border-slate-200'; 
-                card.innerHTML = `<h3 class="text-xl font-bold mb-2 text-blue-700">${desc.name}</h3><p class="text-3xl font-bold mb-3">${score}<span class="text-base font-normal text-slate-500">/50</span></p><p class="text-sm text-slate-700">${isHigh ? desc.high : desc.low}</p>`;
+                const score = scores[trait]; const isHigh = score > 30; const desc = descriptions[trait];
+                const card = document.createElement('div'); card.className = 'bg-slate-50 p-5 rounded-lg border border-slate-200'; card.innerHTML = `<h3 class="text-xl font-bold mb-2 text-blue-700">${desc.name}</h3><p class="text-3xl font-bold mb-3">${score}<span class="text-base font-normal text-slate-500">/50</span></p><p class="text-sm text-slate-700">${isHigh ? desc.high : desc.low}</p>`;
                 penjelasanContainer.appendChild(card);
             });
             
-            // Membuat Grafik
             const ctx = document.getElementById('grafik-hasil').getContext('2d');
-            new Chart(ctx, { 
-                type: 'radar', 
-                data: { 
-                    labels: traitOrder.map(t => descriptions[t].name.split(' ')[0]), 
-                    datasets: [{ 
-                        label: 'Skor Anda', 
-                        data: traitOrder.map(t => scores[t]), 
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)', 
-                        borderColor: 'rgba(59, 130, 246, 1)', 
-                        borderWidth: 2 
-                    }] 
-                }, 
-                options: { 
-                    scales: { r: { beginAtZero: true, max: 50 } }, 
-                    plugins: { legend: { display: false } } 
-                } 
-            });
+            new Chart(ctx, { type: 'radar', data: { labels: traitOrder.map(t => descriptions[t].name.split(' ')[0]), datasets: [{ label: 'Skor Anda', data: traitOrder.map(t => scores[t]), backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2 }] }, options: { scales: { r: { beginAtZero: true, max: 50 } }, plugins: { legend: { display: false } } } });
             window.scrollTo(0, 0);
         }
 
-        // Fungsi untuk mengambil dan menampilkan semua hasil
         async function fetchAndDisplayAllResults() {
             const container = document.getElementById('results-table-container');
             container.innerHTML = '<p class="text-center text-slate-500">Memuat hasil...</p>';
             
             try {
+                // PERBAIKAN: Menambahkan query untuk mengurutkan data dari yang terbaru
                 const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'ocean_results');
-                const querySnapshot = await getDocs(resultsCollection);
+                const q = query(resultsCollection, orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
                 
-                if (querySnapshot.empty) {
-                    container.innerHTML = '<p class="text-center text-slate-500">Belum ada hasil tes yang masuk.</p>';
-                    return;
-                }
+                if (querySnapshot.empty) { container.innerHTML = '<p class="text-center text-slate-500">Belum ada hasil tes yang masuk.</p>'; return; }
 
-                let tableHTML = `
-                    <table class="w-full text-sm text-left text-slate-500">
-                        <thead class="text-xs text-slate-700 uppercase bg-slate-100">
-                            <tr>
-                                <th scope="col" class="px-6 py-3">Nama Kandidat</th>
-                                <th scope="col" class="px-6 py-3 text-center">O</th>
-                                <th scope="col" class="px-6 py-3 text-center">C</th>
-                                <th scope="col" class="px-6 py-3 text-center">E</th>
-                                <th scope="col" class="px-6 py-3 text-center">A</th>
-                                <th scope="col" class="px-6 py-3 text-center">N</th>
-                                <th scope="col" class="px-6 py-3">Waktu Tes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                const results = [];
+                let tableHTML = `<table class="w-full text-sm text-left text-slate-500"><thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr><th scope="col" class="px-6 py-3">Nama Kandidat</th><th scope="col" class="px-6 py-3 text-center">O</th><th scope="col" class="px-6 py-3 text-center">C</th><th scope="col" class="px-6 py-3 text-center">E</th><th scope="col" class="px-6 py-3 text-center">A</th><th scope="col" class="px-6 py-3 text-center">N</th><th scope="col" class="px-6 py-3">Waktu Tes</th></tr></thead><tbody>`;
+                
                 querySnapshot.forEach((doc) => {
-                    results.push(doc.data());
-                });
-
-                // Urutkan hasil dari yang terbaru
-                results.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-
-                results.forEach((data) => {
-                    tableHTML += `
-                        <tr class="bg-white border-b">
-                            <th scope="row" class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">${data.name}</th>
-                            <td class="px-6 py-4 text-center">${data.scores.O}</td>
-                            <td class="px-6 py-4 text-center">${data.scores.C}</td>
-                            <td class="px-6 py-4 text-center">${data.scores.E}</td>
-                            <td class="px-6 py-4 text-center">${data.scores.A}</td>
-                            <td class="px-6 py-4 text-center">${data.scores.N}</td>
-                            <td class="px-6 py-4 text-slate-600">${data.timestamp.toDate().toLocaleString('id-ID')}</td>
-                        </tr>
-                    `;
+                    const data = doc.data();
+                    tableHTML += `<tr class="bg-white border-b"><th scope="row" class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">${data.name}</th><td class="px-6 py-4 text-center">${data.scores.O}</td><td class="px-6 py-4 text-center">${data.scores.C}</td><td class="px-6 py-4 text-center">${data.scores.E}</td><td class="px-6 py-4 text-center">${data.scores.A}</td><td class="px-6 py-4 text-center">${data.scores.N}</td><td class="px-6 py-4 text-slate-600">${data.timestamp.toDate().toLocaleString('id-ID')}</td></tr>`;
                 });
 
                 tableHTML += '</tbody></table>';
@@ -441,8 +317,6 @@ signInAnonymously(auth).catch((error) => {
             }
         }
 
-
-        // Event listeners untuk navigasi
         nextBtn.addEventListener('click', goToNextQuestion);
         prevBtn.addEventListener('click', goToPrevQuestion);
 
