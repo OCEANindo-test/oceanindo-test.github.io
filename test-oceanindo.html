@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis Kepribadian & Karir Berbasis AI</title>
+    <!-- Memuat Tailwind CSS & Font -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Chart.js untuk membuat grafik radar -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Style untuk checkbox dan radio button yang lebih menarik */
+        .custom-checkbox:checked { background-color: #2563eb; border-color: #2563eb; }
+        .custom-checkbox:checked::before { content: '✔'; color: white; font-size: 12px; display: block; text-align: center; line-height: 18px; }
+        .skala-container input:checked + label { background-color: #2563eb; color: white; border-color: #2563eb; transform: scale(1.1); }
+        .custom-checkbox:disabled { background-color: #e5e7eb; border-color: #d1d5db; cursor: not-allowed; }
+        .custom-checkbox:disabled + span { color: #9ca3af; }
+        
+        /* Styling untuk laporan hasil yang lebih rapi dan elegan */
+        .report-content { text-align: justify; }
+        .report-content h3 {
+            font-size: 1.25rem; font-weight: 700; color: #1e3a8a; 
+            margin-bottom: 0.75rem; padding-bottom: 0.5rem; 
+            border-bottom: 2px solid #e2e8f0; text-transform: uppercase;
+            text-align: left;
+        }
+        .report-content h4 {
+            font-size: 1.125rem; font-weight: 600; color: #1e293b; 
+            margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase;
+            text-align: left;
+        }
+        .report-content ul { list-style-position: inside; padding-left: 0; }
+        .report-content li { margin-bottom: 0.5rem; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #result-page-content, #result-page-content * { visibility: visible; }
+            #result-page-content { position: absolute; left: 0; top: 0; width: 100%; padding: 20px !important; }
+            button, .print-hidden { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div id="app-container" class="container mx-auto max-w-4xl p-4 sm:p-8">
+        <!-- Semua konten aplikasi akan dirender di sini oleh JavaScript -->
+    </div>
+    
+    <!-- Overlay untuk Login Admin (awalnya tersembunyi) -->
+    <div id="admin-login-overlay" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center fade-in">
+            <h2 class="text-2xl font-bold text-slate-900 mb-4">Akses Administrator</h2>
+            <p class="text-slate-600 mb-6">Silakan masukkan password admin.</p>
+            <input type="password" id="admin-password" placeholder="••••••••" class="text-center w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500">
+            <div id="admin-error-message" class="text-red-500 text-sm mt-2 h-5"></div>
+            <button id="admin-login-btn" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-700">Login</button>
+            <button id="admin-cancel-btn" class="mt-2 w-full text-slate-500 hover:text-slate-700">Batal</button>
+        </div>
+    </div>
+
+
+    <!-- Template untuk berbagai layar aplikasi -->
+    <template id="template-welcome">
+        <div class="bg-white p-8 rounded-xl shadow-md text-center fade-in">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Analisis Kepribadian & Karir</h1>
+            <p class="mt-2 text-slate-600">Ditenagai oleh Big Five (OCEAN) & AI Gemini</p>
+            
+            <!-- Panduan & Disclaimer untuk Kandidat -->
+            <div class="mt-8 text-left bg-slate-50 border border-slate-200 p-6 rounded-lg space-y-6">
+                
+                <!-- Panduan Penggunaan Baru -->
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800 mb-3">Panduan Penggunaan Singkat</h3>
+                    <ol class="list-decimal list-inside space-y-2 text-sm text-slate-700">
+                        <li>Anda akan dihadapkan pada serangkaian pernyataan. Cukup klik pada angka yang paling mewakili diri Anda.</li>
+                        <li><b>Arti Penilaian:</b> <b>1</b> = Sangat Tidak Sesuai, <b>2</b> = Tidak Sesuai, <b>3</b> = Netral, <b>4</b> = Sesuai, <b>5</b> = Sangat Sesuai.</li>
+                        <li><b>Penting:</b> Isilah dengan sejujur-jujurnya berdasarkan diri Anda secara umum. Tidak ada jawaban yang benar atau salah. Kejujuran Anda akan menghasilkan analisis yang paling akurat.</li>
+                    </ol>
+                </div>
+
+                <!-- Disclaimer Legal Baru -->
+                <div class="border-t border-slate-200 pt-6">
+                    <h3 class="font-bold text-lg text-slate-800 mb-3">Penting: Disclaimer & Batasan Tanggung Jawab</h3>
+                     <div class="space-y-4 text-xs text-slate-600">
+                        <p>Dengan melanjutkan dan menggunakan layanan tes kepribadian OCEANINDO ("Layanan"), Anda mengakui, memahami, dan menyetujui sepenuhnya seluruh poin yang tercantum dalam disclaimer ini.</p>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li><strong>Tujuan & Dasar Ilmiah:</strong> Layanan ini dirancang sebagai alat bantu untuk refleksi diri. Metode penilaiannya didasarkan pada model psikometrik Big Five (OCEAN), sebuah teori kepribadian yang diakui secara luas dalam penelitian psikologi akademis. Tujuan kami bersifat edukatif dan informatif, bukan untuk tujuan diagnosis.</li>
+                            <li><strong>Sifat Hasil Analisis:</strong> Hasil yang Anda terima **BUKAN** merupakan diagnosis klinis kondisi kesehatan mental. Hasil ini adalah **cerminan kecenderungan** kepribadian Anda berdasarkan jawaban yang diberikan dan tidak bersifat mutlak. Kepribadian manusia bersifat dinamis dan dapat berkembang.</li>
+                            <li><strong>Peran Kecerdasan Buatan (AI):</strong> Laporan naratif dihasilkan oleh AI Gemini yang dilatih khusus oleh OCEANINDO. AI berfungsi mensintesis data skor dan konteks Anda menjadi laporan personal. Meskipun canggih, analisis ini adalah interpretasi dan **tidak dapat menggantikan konsultasi tatap muka** dengan psikolog atau psikiater berlisensi.</li>
+                            <li><strong>Tanggung Jawab Pengguna:</strong> Anda bertanggung jawab penuh atas setiap interpretasi dan keputusan yang Anda ambil setelah menerima hasil ini. Hasil tes ini dimaksudkan sebagai **alat bantu perspektif baru**, bukan sebagai penentu tunggal untuk keputusan hidup.</li>
+                            <li><strong>Batasan Tanggung Jawab & Kerahasiaan Data:** OCEANINDO tidak bertanggung jawab atas segala konsekuensi yang timbul dari penggunaan informasi dalam Layanan ini. Kami berkomitmen untuk **merahasiakan data pribadi Anda** dan memastikan data tersebut tidak akan diperjualbelikan kepada pihak manapun.</li>
+                        </ol>
+                        <p class="font-semibold">Penggunaan Anda atas Layanan ini menandakan penerimaan penuh Anda terhadap seluruh syarat dan ketentuan dalam disclaimer ini.</p>
+                    </div>
+                </div>
+
+                <!-- Alur Pembayaran -->
+                 <div class="border-t border-slate-200 pt-6">
+                    <h3 class="font-bold text-lg text-slate-800 mb-3">Alur & Biaya Layanan</h3>
+                     <p class="text-sm text-slate-700">Tes ini akan memberikan laporan analisis lengkap seharga **Rp 25.000**. Untuk mendapatkan akses, lakukan pembayaran ke nomor di bawah, lalu kirim bukti transfer ke WhatsApp Administrator untuk mendapatkan **Kode Voucher** yang akan dimasukkan di akhir tes.</p>
+                     <div class="mt-2 bg-white p-3 rounded-md text-center">
+                         <p class="font-semibold">Bayar ke: **0812-XXXX-XXXX** (a.n. Administrator)</p>
+                         <p class="font-semibold">Konfirmasi ke WA: **0812-XXXX-XXXX**</p>
+                     </div>
+                </div>
+            </div>
+
+            <!-- Bagian Persetujuan -->
+            <div class="mt-6">
+                <label class="flex items-center justify-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="agreement-checkbox" class="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 custom-checkbox appearance-none border-2">
+                    <span class="text-slate-600">Saya telah membaca, memahami, dan menyetujui seluruh Panduan & Disclaimer di atas.</span>
+                </label>
+            </div>
+            
+            <div class="mt-8 space-y-4">
+                <button data-action="startAsCandidate" id="start-test-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled>
+                    Saya Mengerti & Mulai Tes
+                </button>
+            </div>
+             <p class="text-xs text-slate-400 mt-4">Admin? Tekan `Ctrl + Alt + A`</p>
+        </div>
+    </template>
+    
+    <template id="template-biodata-input">
+        <div class="bg-white p-8 rounded-xl shadow-md text-center fade-in">
+            <h2 class="text-xl font-bold mb-4">Langkah 1: Informasi Diri</h2>
+            <p class="text-slate-600 mb-6">Data ini akan digunakan untuk personalisasi hasil laporan Anda.</p>
+            <div class="space-y-4 max-w-md mx-auto text-left">
+                <div>
+                    <label for="candidate-name" class="font-semibold text-slate-700">Nama Lengkap</label>
+                    <input type="text" id="candidate-name" placeholder="Contoh: Budi Santoso" class="mt-1 w-full p-3 border border-slate-300 rounded-lg">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                         <label for="gender" class="font-semibold text-slate-700">Gender</label>
+                         <select id="gender" class="mt-1 w-full p-3 border border-slate-300 rounded-lg bg-white">
+                            <option value="">-- Pilih Gender --</option>
+                            <option value="Pria">Pria</option>
+                            <option value="Wanita">Wanita</option>
+                         </select>
+                    </div>
+                     <div>
+                         <label for="dob" class="font-semibold text-slate-700">Tanggal Lahir</label>
+                         <input type="date" id="dob" class="mt-1 w-full p-3 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+                <div>
+                     <label for="whatsapp" class="font-semibold text-slate-700">Nomor WhatsApp Aktif</label>
+                     <input type="tel" id="whatsapp" placeholder="Contoh: 081234567890" class="mt-1 w-full p-3 border border-slate-300 rounded-lg">
+                </div>
+            </div>
+            <div data-id="error-message" class="text-red-500 text-sm mt-4 h-5"></div>
+            <button data-action="submitBiodata" class="mt-6 w-full max-w-md mx-auto bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700">Lanjutkan</button>
+        </div>
+    </template>
+    
+    <template id="template-path-selection">
+         <div class="bg-white p-8 rounded-xl shadow-md text-center fade-in">
+            <h2 class="text-xl font-bold mb-4">Langkah 2: Pilih Jalur Karir Anda</h2>
+            <p class="text-slate-600 mb-6">Pilih salah satu agar kami bisa memberikan analisis yang paling relevan.</p>
+            <div class="space-y-4">
+                <button data-path="pekerja" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">Saya Calon Pekerja (Mencari Profesi)</button>
+                <button data-path="pengusaha" class="w-full bg-slate-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-700 transition-colors duration-300">Saya Calon Pengusaha (Menilai Potensi)</button>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-selection">
+         <div class="bg-white p-8 rounded-xl shadow-md fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <button data-action="goBackToPathSelection" class="text-slate-500 hover:text-slate-800">&larr; Kembali</button>
+                <h2 data-id="selection-title" class="text-xl font-bold text-center flex-grow"></h2>
+                <div class="w-16"></div> <!-- Spacer -->
+            </div>
+            <p data-id="selection-subtitle" class="text-slate-600 mb-6 text-center">Pilih maksimal 3 yang paling menarik bagi Anda.</p>
+            <div id="selection-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+            <div data-id="error-message" class="text-red-500 text-sm mt-4 text-center h-5"></div>
+            <div class="text-center mt-6">
+                <button data-action="submitSelections" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 transition-colors duration-300">Lanjutkan</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="template-context-input">
+        <div class="bg-white p-8 rounded-xl shadow-md text-center fade-in">
+            <h2 class="text-xl font-bold mb-4">Langkah Terakhir Sebelum Tes</h2>
+            <p class="text-slate-600 mb-6">Untuk analisis AI yang lebih akurat, secara singkat, apa yang sedang Anda rasakan atau pikirkan saat ini?</p>
+            <textarea id="emotional-context" rows="3" class="w-full max-w-md mx-auto p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 'Lagi santai dan penasaran', atau 'Agak cemas soal masa depan karir'"></textarea>
+            <div class="text-center mt-6">
+                <button data-action="submitContext" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 transition-colors duration-300">Mulai Kuesioner</button>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-questionnaire">
+        <main class="bg-white p-6 sm:p-8 rounded-xl shadow-md fade-in">
+            <div class="mb-6">
+                <div class="flex justify-between mb-1"><span class="text-base font-medium text-blue-700">Progress</span><span data-id="progress-text" class="text-sm font-medium text-blue-700"></span></div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5"><div data-id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out"></div></div>
+            </div>
+            <div data-id="question-display" class="my-8"></div>
+            <div class="flex justify-between items-center mt-10">
+                <button data-action="prevQuestion" class="bg-slate-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-slate-600 transition-colors duration-300 disabled:bg-slate-300 disabled:cursor-not-allowed">Sebelumnya</button>
+                <button data-action="nextQuestion" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300">Berikutnya</button>
+            </div>
+            <div data-id="error-message" class="text-center text-red-500 font-medium mt-4 h-6"></div>
+        </main>
+    </template>
+    
+    <template id="template-payment">
+         <div class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center fade-in">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Satu Langkah Terakhir</h2>
+                <p class="text-slate-600 mb-6">Untuk membuka laporan analisis lengkap dari AI seharga <span class="font-bold text-blue-600">Rp 25.000</span>, silakan masukkan Kode Voucher Anda.</p>
+                <input type="text" id="voucher-code" placeholder="Masukkan Kode Voucher" class="text-center w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500">
+                <div data-id="error-message" class="text-red-500 text-sm mt-2 h-5"></div>
+                <button data-action="submitVoucher" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-700 transition-colors duration-300">Buka Hasil Analisis</button>
+                 <p class="text-xs text-slate-400 mt-4">Belum punya kode? Hubungi administrator untuk melakukan pembayaran.</p>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-loading">
+        <div class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 text-white text-center">
+            <div class="fade-in">
+                <svg class="animate-spin h-10 w-10 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <h2 class="text-2xl font-bold">AI Sedang Menganalisis...</h2>
+                <p>Harap tunggu, laporan personal Anda sedang dibuat.</p>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-result">
+        <section id="result-page-content" class="bg-white p-6 sm:p-8 rounded-xl shadow-md fade-in">
+            <div class="text-center">
+                <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Laporan Analisis & Prediksi Kepribadian</h2>
+                <p class="text-slate-600 mb-8">Ini adalah analisis mendalam berdasarkan jawaban Anda, ditenagai oleh AI Gemini.</p>
+            </div>
+            
+            <div class="bg-slate-50 p-4 rounded-lg mb-8 border border-slate-200">
+                 <h3 class="text-lg font-bold text-center text-slate-800 mb-4 uppercase">Ringkasan Skor Kepribadian Anda</h3>
+                 <div data-id="score-table-container" class="mb-6"></div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="w-full max-w-lg mx-auto"><canvas data-id="chart-radar-canvas"></canvas></div>
+                    <div class="w-full max-w-lg mx-auto"><canvas data-id="chart-bar-canvas"></canvas></div>
+                 </div>
+            </div>
+
+            <div data-id="report-content" class="report-content text-left space-y-8 max-w-none"></div>
+            <div class="mt-10 text-center space-x-4 print:hidden">
+                <button data-action="printResult" class="bg-slate-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-slate-700 transition-colors duration-300">Simpan sebagai PDF</button>
+                <button onclick="window.location.reload()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">Kembali ke Awal</button>
+            </div>
+        </section>
+    </template>
+
+    <template id="template-recruiter-dashboard">
+         <section class="bg-white p-6 sm:p-8 rounded-xl shadow-md fade-in">
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6 text-center">Hasil Tes Semua Kandidat</h2>
+            <div data-id="results-table-container" class="overflow-x-auto"></div>
+            <div class="mt-8 text-center"><button onclick="window.location.reload()" class="bg-slate-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-slate-700 transition-colors duration-300">Kembali ke Halaman Awal</button></div>
+         </section>
+    </template>
+    
+    <div id="firebase-error-overlay" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg text-center fade-in">
+            <h2 class="text-2xl font-bold text-red-600 mb-4">Kesalahan Konfigurasi Firebase</h2>
+            <p class="text-slate-700 mb-6">Layanan Autentikasi Anonim untuk proyek ini belum diaktifkan. Aplikasi tidak dapat terhubung ke database sebelum ini diperbaiki.</p>
+            <div class="text-left bg-slate-50 p-4 rounded-md border border-slate-200">
+                <h3 class="font-bold mb-2">Langkah-langkah untuk Memperbaiki:</h3>
+                <ol class="list-decimal list-inside space-y-2 text-slate-600">
+                    <li>Buka **Firebase Console** proyek Anda.</li>
+                    <li>Pergi ke menu **Build** > **Authentication**.</li>
+                    <li>Pilih tab **Sign-in method**.</li>
+                    <li>Klik pada **Anonymous** (Anonim) dari daftar penyedia.</li>
+                    <li>Aktifkan (Enable) tombolnya lalu klik **Save**.</li>
+                </ol>
+            </div>
+            <p class="mt-6 text-sm text-slate-500">Setelah Anda mengaktifkannya, silakan muat ulang (refresh) halaman ini.</p>
+        </div>
+    </div>
+
+    <!-- SCRIPT UTAMA APLIKASI -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, Timestamp, query, orderBy, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        
+        class OceanAIApp {
+            constructor() {
+                 this.firebaseConfig = {
+                    apiKey: "AIzaSyB9X4NarIR047fqYEEexBBwtvaRkZWm5Aw",
+                    authDomain: "oceanindo-test.firebaseapp.com",
+                    projectId: "oceanindo-test",
+                    storageBucket: "oceanindo-test.appspot.com",
+                    messagingSenderId: "436108196304",
+                    appId: "1:436108196304:web:ada0a30514f712de5a61d5",
+                    measurementId: "G-X7GJXW4G94"
+                };
+                this.appId = this.firebaseConfig.projectId;
+                this.adminPassword = 'ADMIN123';
+                this.app = initializeApp(this.firebaseConfig);
+                this.db = getFirestore(this.app);
+                this.auth = getAuth(this.app);
+                this.questions = [ { text: "Saya adalah pusat perhatian di sebuah pesta.", trait: "E", reverse: false }, { text: "Saya tidak terlalu peduli dengan orang lain.", trait: "A", reverse: true }, { text: "Saya selalu menyiapkan segala sesuatu.", trait: "C", reverse: false }, { text: "Saya jarang merasa stres.", trait: "N", reverse: true }, { text: "Saya memiliki kosakata yang kaya.", trait: "O", reverse: false }, { text: "Saya tidak banyak bicara.", trait: "E", reverse: true }, { text: "Saya tertarik pada orang lain.", trait: "A", reverse: false }, { text: "Saya sering meninggalkan barang-barang saya berantakan.", trait: "C", reverse: true }, { text: "Saya santai hampir sepanjang waktu.", trait: "N", reverse: true }, { text: "Saya kesulitan memahami ide-ide abstrak.", trait: "O", reverse: true }, { text: "Saya merasa nyaman berada di antara orang-orang.", trait: "E", reverse: false }, { text: "Saya sering menghina orang lain.", trait: "A", reverse: true }, { text: "Saya memperhatikan detail.", trait: "C", reverse: false }, { text: "Saya sering merasa khawatir tentang banyak hal.", trait: "N", reverse: false }, { text: "Saya memiliki imajinasi yang hidup.", trait: "O", reverse: false }, { text: "Saya lebih suka menyendiri.", trait: "E", reverse: true }, { text: "Saya bisa merasakan emosi orang lain.", trait: "A", reverse: false }, { text: "Saya sering membuat kekacauan.", trait: "C", reverse: true }, { text: "Saya jarang merasa sedih atau murung.", trait: "N", reverse: true }, { text: "Saya tidak tertarik pada ide-ide abstrak.", trait: "O", reverse: true }, { text: "Saya memulai percakapan.", trait: "E", reverse: false }, { text: "Saya tidak terlalu tertarik pada masalah orang lain.", trait: "A", reverse: true }, { text: "Saya langsung mengerjakan pekerjaan saya.", trait: "C", reverse: false }, { text: "Saya mudah merasa kesal.", trait: "N", reverse: false }, { text: "Saya punya ide-ide yang cemerlang.", trait: "O", reverse: false }, { text: "Saya menghindari menjadi pusat perhatian.", trait: "E", reverse: true }, { text: "Saya memiliki hati yang lembut.", trait: "A", reverse: false }, { text: "Saya sering lupa mengembalikan barang ke tempatnya.", trait: "C", reverse: true }, { text: "Saya sangat mudah emosi.", trait: "N", reverse: false }, { text: "Saya tidak memiliki imajinasi yang bagus.", trait: "O", reverse: true }, { text: "Saya banyak bicara di berbagai situasi.", trait: "E", reverse: false }, { text: "Saya benar-benar peduli pada orang lain.", trait: "A", reverse: false }, { text: "Saya suka keteraturan.", trait: "C", reverse: false }, { text: "Suasana hati saya sering berubah-ubah.", trait: "N", reverse: false }, { text: "Saya cepat memahami sesuatu.", trait: "O", reverse: false }, { text: "Saya tidak suka menarik perhatian orang ke diri saya.", trait: "E", reverse: true }, { text: "Saya meluangkan waktu untuk orang lain.", trait: "A", reverse: false }, { text: "Saya orang yang ceroboh.", trait: "C", reverse: true }, { text: "Saya sering merasa galau.", trait: "N", reverse: false }, { text: "Saya kurang kreatif.", trait: "O", reverse: true }, { text: "Saya tidak keberatan menjadi pusat perhatian.", trait: "E", reverse: false }, { text: "Saya merasakan penderitaan orang lain.", trait: "A", reverse: false }, { text: "Saya adalah orang yang teliti dan selalu rapi.", trait: "C", reverse: false }, { text: "Saya jarang merasa cemas.", trait: "N", reverse: true }, { text: "Saya pandai menggunakan kata-kata yang sulit.", trait: "O", reverse: false }, { text: "Saya tetap di latar belakang (tidak menonjol).", trait: "E", reverse: true }, { text: "Saya sering merasa tidak simpati pada orang lain.", trait: "A", reverse: true }, { text: "Saya terkadang mengabaikan tugas-tugas saya.", trait: "C", reverse: true }, { text: "Saya memiliki emosi yang stabil.", trait: "N", reverse: true }, { text: "Saya sulit membayangkan sesuatu.", trait: "O", reverse: true }];
+                this.professions = [
+                    { id: "sales", name: "Bisnis, Pemasaran, & Penjualan" }, { id: "it", name: "Teknologi Informasi (IT) & Data" },
+                    { id: "creative", name: "Kreatif, Seni, & Komunikasi" }, { id: "finance", name: "Keuangan & Akuntansi" },
+                    { id: "hr", name: "Sumber Daya Manusia (HR)" }, { id: "cs", name: "Layanan Pelanggan & Perhotelan" },
+                    { id: "education", name: "Pendidikan & Pelatihan" }, { id: "health", name: "Kesehatan & Medis" },
+                    { id: "technical", name: "Teknik & Manufaktur"}, {id: "public", name: "Hukum & Layanan Publik"}
+                ];
+                this.entrepreneurTypes = [
+                    { id: "ecommerce", name: "Toko Online / E-commerce" }, { id: "agency", name: "Agensi Digital / Kreatif" },
+                    { id: "fnb", name: "Kuliner (F&B)" }, { id: "services", name: "Jasa & Konsultasi" },
+                    { id: "education", name: "Pendidikan / Edutech" }, { id: "fashion", name: "Fashion & Produk Fisik" },
+                    { id: "social", name: "Usaha Sosial (Social Enterprise)" }, { id: "tech", name: "Startup Teknologi" }
+                ];
+                
+                this.resetState();
+                this.appContainer = document.getElementById('app-container');
+                this.myChartRadar = null;
+                this.myChartBar = null;
+                this.init();
+            }
+
+            resetState() {
+                 this.state = {
+                    currentView: 'welcome', candidateName: '', gender: '', dob: '', whatsapp: '', careerPath: '', 
+                    chosenProfessions: [], emotionalContext: '', currentQuestionIndex: 0,
+                    userAnswers: new Array(this.questions.length).fill(null),
+                    scores: null, finalReport: ''
+                };
+            }
+
+            init() {
+                signInAnonymously(this.auth).catch(error => this.handleAuthError(error));
+                this.addEventListeners();
+                this.render();
+            }
+            
+            handleAuthError(error) {
+                console.error("Firebase Auth Error:", error);
+                if (error.code === 'auth/operation-not-allowed') {
+                    document.getElementById('firebase-error-overlay').classList.remove('hidden');
+                } else {
+                    alert("Terjadi kesalahan koneksi ke Firebase: " + error.message);
+                }
+            }
+            
+            addEventListeners() {
+                this.appContainer.addEventListener('click', (e) => {
+                    const actionTarget = e.target.closest('[data-action]');
+                    const pathTarget = e.target.closest('[data-path]');
+                    if (actionTarget) {
+                        const action = actionTarget.dataset.action;
+                        if (typeof this[action] === 'function') this[action]();
+                    } else if (pathTarget) {
+                        const path = pathTarget.dataset.path;
+                        this.selectPath(path);
+                    }
+                });
+                this.appContainer.addEventListener('change', (e) => {
+                    if(e.target.id === 'agreement-checkbox') this.toggleStartButton();
+                    if(e.target.matches('#selection-list input[type="checkbox"]')) this.handleSelectionLimit();
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'a') {
+                        e.preventDefault();
+                        this.showAdminLogin();
+                    }
+                });
+            }
+
+            render() {
+                this.appContainer.innerHTML = '';
+                const template = document.getElementById(`template-${this.state.currentView}`);
+                if (template) {
+                    const view = template.content.cloneNode(true);
+                    this.appContainer.appendChild(view);
+                    
+                    if(this.state.currentView === 'questionnaire') this.renderCurrentQuestion();
+                    if(this.state.currentView === 'selection') this.renderChoiceList();
+                    if(this.state.currentView === 'result') this.renderResultPage();
+                }
+            }
+            
+            toggleStartButton() {
+                const checkbox = this.appContainer.querySelector('#agreement-checkbox');
+                const startButton = this.appContainer.querySelector('#start-test-btn');
+                if (checkbox && startButton) startButton.disabled = !checkbox.checked;
+            }
+            
+            startAsCandidate() { this.state.currentView = 'biodata-input'; this.render(); }
+            
+            showAdminLogin() {
+                const overlay = document.getElementById('admin-login-overlay');
+                overlay.classList.remove('hidden');
+                document.getElementById('admin-password').focus();
+                
+                const loginBtn = document.getElementById('admin-login-btn');
+                const cancelBtn = document.getElementById('admin-cancel-btn');
+                const passInput = document.getElementById('admin-password');
+                
+                loginBtn.onclick = () => this.handleAdminLogin();
+                cancelBtn.onclick = () => this.hideAdminLogin();
+                passInput.onkeyup = (e) => { if(e.key === 'Enter') this.handleAdminLogin(); }
+            }
+
+            hideAdminLogin() { document.getElementById('admin-login-overlay').classList.add('hidden'); }
+
+            handleAdminLogin() {
+                const passwordInput = document.getElementById('admin-password');
+                const errorMsg = document.getElementById('admin-error-message');
+                if (passwordInput.value === this.adminPassword) {
+                    this.hideAdminLogin();
+                    this.state.currentView = 'recruiter-dashboard';
+                    this.render();
+                    this.fetchAndDisplayAllResults();
+                } else {
+                    errorMsg.textContent = "Password salah.";
+                }
+            }
+
+            submitBiodata() {
+                const nameInput = this.appContainer.querySelector('#candidate-name');
+                const genderInput = this.appContainer.querySelector('#gender');
+                const dobInput = this.appContainer.querySelector('#dob');
+                const whatsappInput = this.appContainer.querySelector('#whatsapp');
+                const errorEl = this.appContainer.querySelector('[data-id="error-message"]');
+                
+                if (!nameInput.value.trim() || !genderInput.value || !dobInput.value || !whatsappInput.value.trim()) {
+                    errorEl.textContent = 'Semua kolom wajib diisi.';
+                    return;
+                }
+                
+                this.state.candidateName = nameInput.value.trim();
+                this.state.gender = genderInput.value;
+                this.state.dob = dobInput.value;
+                this.state.whatsapp = whatsappInput.value.trim();
+                
+                this.state.currentView = 'path-selection';
+                this.render();
+            }
+            
+            goBackToPathSelection() {
+                this.state.currentView = 'path-selection';
+                this.render();
+            }
+
+            selectPath(path) { this.state.careerPath = path; this.state.currentView = 'selection'; this.render(); }
+            
+            renderChoiceList() {
+                const listEl = this.appContainer.querySelector('#selection-list');
+                const titleEl = this.appContainer.querySelector('[data-id="selection-title"]');
+                const itemList = this.state.careerPath === 'pekerja' ? this.professions : this.entrepreneurTypes;
+                
+                titleEl.textContent = this.state.careerPath === 'pekerja' ? 'Langkah 3: Profesi Apa yang Anda Minati?' : 'Langkah 3: Bidang Usaha Apa yang Anda Minati?';
+                
+                listEl.innerHTML = itemList.map(p => `
+                    <label class="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors duration-200">
+                        <input type="checkbox" value="${p.name}" class="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 custom-checkbox appearance-none border-2 border-slate-300">
+                        <span>${p.name}</span>
+                    </label>
+                `).join('');
+            }
+
+            handleSelectionLimit() {
+                const checkboxes = this.appContainer.querySelectorAll('#selection-list input[type="checkbox"]');
+                const checkedCount = this.appContainer.querySelectorAll('#selection-list input:checked').length;
+                if (checkedCount >= 3) {
+                    checkboxes.forEach(checkbox => {
+                        if (!checkbox.checked) {
+                            checkbox.disabled = true;
+                            checkbox.parentElement.classList.add('opacity-50', 'cursor-not-allowed');
+                        }
+                    });
+                } else {
+                    checkboxes.forEach(checkbox => {
+                        checkbox.disabled = false;
+                        checkbox.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                    });
+                }
+            }
+
+            submitSelections() {
+                const checkedBoxes = this.appContainer.querySelectorAll('#selection-list input:checked');
+                const errorEl = this.appContainer.querySelector('[data-id="error-message"]');
+                if (checkedBoxes.length === 0) { errorEl.textContent = 'Pilih minimal satu bidang.'; return; }
+                this.state.chosenProfessions = Array.from(checkedBoxes).map(cb => cb.value);
+                this.state.currentView = 'context-input';
+                this.render();
+            }
+            
+            submitContext() { const contextInput = this.appContainer.querySelector('#emotional-context'); this.state.emotionalContext = contextInput.value.trim() || 'Tidak ada konteks khusus, sedang santai.'; this.state.currentView = 'questionnaire'; this.render(); }
+            renderCurrentQuestion() { const qDisplay = this.appContainer.querySelector('[data-id="question-display"]'); if (!qDisplay) return; const question = this.questions[this.state.currentQuestionIndex]; qDisplay.innerHTML = `<p class="text-xl font-medium mb-6 text-center">${question.text}</p><div class="flex flex-wrap justify-center gap-2 skala-container" role="radiogroup">${[1, 2, 3, 4, 5].map(val => `<input type="radio" name="q_answer" value="${val}" id="q_answer_${val}" class="sr-only"><label for="q_answer_${val}" class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center text-xl font-bold border-2 border-slate-300 rounded-full cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:scale-105">${val}</label>`).join('')}</div>`; qDisplay.classList.remove('fade-in'); void qDisplay.offsetWidth; qDisplay.classList.add('fade-in'); if (this.state.userAnswers[this.state.currentQuestionIndex] !== null) { const savedAnswer = qDisplay.querySelector(`input[value="${this.state.userAnswers[this.state.currentQuestionIndex]}"]`); if (savedAnswer) savedAnswer.checked = true; } this.updateNavigation(); this.updateProgress(); }
+            updateNavigation() { const prevBtn = this.appContainer.querySelector('[data-action="prevQuestion"]'); const nextBtn = this.appContainer.querySelector('[data-action="nextQuestion"]'); if (!prevBtn || !nextBtn) return; prevBtn.disabled = this.state.currentQuestionIndex === 0; if (this.state.currentQuestionIndex === this.questions.length - 1) { nextBtn.textContent = 'Selesai'; nextBtn.classList.add('bg-green-600', 'hover:bg-green-700'); } else { nextBtn.textContent = 'Berikutnya'; nextBtn.classList.remove('bg-green-600', 'hover:bg-green-700'); } }
+            updateProgress() { const progressBar = this.appContainer.querySelector('[data-id="progress-bar"]'); const progressText = this.appContainer.querySelector('[data-id="progress-text"]'); if (!progressBar || !progressText) return; const percentage = ((this.state.currentQuestionIndex + 1) / this.questions.length) * 100; progressBar.style.width = `${percentage}%`; progressText.textContent = `Pertanyaan ${this.state.currentQuestionIndex + 1} dari ${this.questions.length}`; }
+            nextQuestion() {  const selectedAnswer = this.appContainer.querySelector('input[name="q_answer"]:checked'); const errorEl = this.appContainer.querySelector('[data-id="error-message"]'); if (!selectedAnswer) { errorEl.textContent = 'Silakan pilih jawaban Anda terlebih dahulu.'; return; }  errorEl.textContent = '';  this.state.userAnswers[this.state.currentQuestionIndex] = parseInt(selectedAnswer.value);  if (this.state.currentQuestionIndex < this.questions.length - 1) {  this.state.currentQuestionIndex++;  this.renderCurrentQuestion();  } else { if (this.state.userAnswers.every(a => a !== null)) { this.state.currentView = 'payment'; this.render(); } else { const missing = this.state.userAnswers.map((a, i) => a === null ? i + 1 : null).filter(n => n !== null); alert(`TES BELUM LENGKAP!\n\nAnda belum menjawab pertanyaan nomor: ${missing.join(', ')}.`); } } }
+            prevQuestion() { if (this.state.currentQuestionIndex > 0) { this.state.currentQuestionIndex--; this.renderCurrentQuestion(); } }
+            async submitVoucher() { const voucherInput = this.appContainer.querySelector('#voucher-code'); const errorEl = this.appContainer.querySelector('[data-id="error-message"]'); const voucherCode = voucherInput.value.trim().toUpperCase(); if (voucherCode === 'AKSESMASTER') { errorEl.textContent = 'Kode Master terdeteksi. Membuka hasil...'; this.showLoadingAndGenerateReport(); return; } if (!voucherCode) { errorEl.textContent = 'Kode Voucher tidak boleh kosong.'; return; } errorEl.textContent = 'Memverifikasi...'; try { const voucherRef = doc(this.db, 'artifacts', this.appId, 'public', 'data', 'vouchers', voucherCode); const voucherSnap = await getDoc(voucherRef); if (voucherSnap.exists() && voucherSnap.data().used === false) { await updateDoc(voucherRef, { used: true, usedBy: this.state.candidateName, usedAt: Timestamp.now() }); this.showLoadingAndGenerateReport(); } else { errorEl.textContent = 'Kode Voucher tidak valid atau sudah digunakan.'; } } catch (e) { console.error("Voucher validation error: ", e); errorEl.textContent = 'Gagal memverifikasi voucher. Coba lagi.'; } }
+            showLoadingAndGenerateReport() { this.state.currentView = 'loading'; this.render(); this.calculateAndShowResults(); }
+            async calculateAndShowResults() { this.state.scores = { O: 0, C: 0, E: 0, A: 0, N: 0 }; this.questions.forEach((q, index) => { let score = this.state.userAnswers[index]; if (q.reverse) { score = 6 - score; } this.state.scores[q.trait] += score; }); try { this.state.finalReport = await this.callGeminiAPI(this.state); await this.saveResultToFirebase(this.state); } catch (e) { console.error("AI Generation/Save Error", e); this.state.finalReport = "<p class='text-red-500'>Maaf, terjadi kesalahan saat AI membuat laporan. Silakan coba lagi nanti.</p>"; } this.state.currentView = 'result'; this.render(); }
+            async callGeminiAPI({scores, candidateName, gender, dob, emotionalContext, careerPath, chosenProfessions}) {
+                const prompt = this.buildAIPrompt(scores, candidateName, gender, dob, emotionalContext, careerPath, chosenProfessions);
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                try { const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); } const result = await response.json(); if (result.candidates && result.candidates[0].content.parts[0].text) { return result.candidates[0].content.parts[0].text.replace(/^```html/gm, '').replace(/```$/gm, ''); } else { throw new Error('Invalid response structure from AI API'); } } catch (error) { console.error('Error calling Gemini API:', error); return `<p class="text-red-600 font-semibold">Terjadi kesalahan saat berkomunikasi dengan AI. Laporan tidak dapat dibuat. Error: ${error.message}</p>`; }
+            }
+            buildAIPrompt(scores, name, gender, dob, context, path, professions) {
+                const age = new Date().getFullYear() - new Date(dob).getFullYear();
+                let sapaan = 'Rekan';
+                if (age > 35) { sapaan = (gender === 'Pria') ? `Bapak ${name.split(' ')[0]}` : `Ibu ${name.split(' ')[0]}`; }
+                else { sapaan = (gender === 'Pria') ? `Bro ${name.split(' ')[0]}` : `Sis ${name.split(' ')[0]}`; }
+                
+                const scoreString = `Openness: ${scores.O}, Conscientiousness: ${scores.C}, Extraversion: ${scores.E}, Agreeableness: ${scores.A}, Neuroticism: ${scores.N}.`;
+                let pathInfo = (path === 'pekerja') ? `Klien ini tertarik pada jalur "Pekerja Profesional" dan mempertimbangkan bidang: ${professions.join(', ')}.` : `Klien ini tertarik pada jalur "Pengusaha Pemula" dan mempertimbangkan bidang usaha: ${professions.join(', ')}.`;
+                
+                return `Anda adalah OCEANINDO, seorang analis kepribadian dan karir AI yang sangat bijak dan profesional. Sapa klien dengan "${sapaan}". Klien bernama "${name}" memiliki data: Skor OCEAN (${scoreString}), Kondisi saat tes ("${context}"), Jalur karir ("${pathInfo}").
+                TUGAS ANDA: Buat laporan super lengkap dalam format HTML, tanpa tag head/body/html. Pastikan semua judul dan sub-judul rata kiri, BOLD, dan UPPERCASE dengan titik dua di akhir (contoh: '<h3>PROFIL UTAMA:</h3>'). Semua paragraf penjelasan harus rata kanan-kiri (justified). Gunakan emoji sebagai bullet points (contoh: 💡 untuk Kekuatan, ⚠️ untuk Tantangan).
+                Struktur Laporan:
+                1.  **PROFIL UTAMA ${name.toUpperCase()}:**: Beri julukan kreatif dalam format **<p class="font-bold uppercase text-lg text-blue-700 text-center">JULUKAN KREATIF</p>**.
+                2.  **ANALISIS ARENA PROFESIONAL:**: Buat sub-judul **<h4>KEKUATAN UTAMA DI LINGKUNGAN KERJA:</h4>** dan **<h4>AREA PENGEMBANGAN POTENSIAL:</h4>**. Jelaskan secara detail, jika menggunakan istilah psikologis, berikan terjemahan (contoh: *Resilience* (Ketahanan Mental)). Jika memberi saran, berikan contoh konkret (contoh: siapkan 30 menit untuk 'pemulihan diri' setelah rapat besar). Lanjutkan dengan sub-judul **<h4>PREDIKSI KINERJA & ATTITUDE KERJA:</h4>** (jelaskan soal absensi dan penyelesaian tugas). Terakhir, buat sub-judul **<h4>KESESUAIAN DENGAN JALUR PILIHAN:</h4>** dan berikan analisis mendalam untuk setiap profesi/bidang usaha yang dipilih, termasuk rekomendasi yang lebih spesifik.
+                3.  **ANALISIS ARENA HUBUNGAN INTERPERSONAL:**: Jelaskan gaya hubungannya.
+                4.  **ANALISIS ARENA MANAJEMEN DIRI:**: Buat sub-judul **<h4>KEUANGAN:</h4>** dan **<h4>KESEHATAN:</h4>**. Jelaskan kecenderungannya.
+                Akhiri laporan dengan dua bagian terpisah di bawah ini:
+                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                    <p style="font-weight: bold; text-align: center; font-size: 1.125rem;">OCEANINDO: KENALI DIRI, TAKLUKKAN DUNIA!</p>
+                    <p style="font-size: 9px; font-style: italic; text-transform: lowercase; text-align: center; color: #64748b;">dirancang oleh arief s wirawan dan di tenagai oleh ursa ai.</p>
+                </div>
+                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                    <h4 style="font-size: 10px; font-weight: bold; text-transform: uppercase;">CATATAN PENUTUP & DISCLAIMER:</h4>
+                    <p style="font-size: 9px; font-style: italic; color: #64748b; text-align: justify;">Hasil analisis ini didasarkan pada model psikometrik Big Five yang tervalidasi secara ilmiah (referensi: McCrae & Costa, 1987) dan dipersonalisasi oleh AI. Namun, laporan ini bersifat sebagai panduan dan tidak mengikat. OCEANINDO tidak bertanggung jawab atas keputusan karir atau hidup yang diambil berdasarkan laporan ini.</p>
+                </div>`;
+            }
+            async saveResultToFirebase({candidateName, gender, dob, whatsapp, scores, finalReport, careerPath, chosenProfessions, emotionalContext}) {
+                try { await addDoc(collection(this.db, 'artifacts', this.appId, 'public', 'data', 'ocean_results'), { name: candidateName, gender, dob, whatsapp, scores, report: finalReport, path: careerPath, professions: chosenProfessions, context: emotionalContext, timestamp: Timestamp.now() }); } catch (e) { console.error("Error saving final report to Firebase:", e); }
+            }
+            renderResultPage() {
+                const reportContentEl = this.appContainer.querySelector('[data-id="report-content"]');
+                const radarCanvasEl = this.appContainer.querySelector('[data-id="chart-radar-canvas"]');
+                const barCanvasEl = this.appContainer.querySelector('[data-id="chart-bar-canvas"]');
+                const scoreTableContainer = this.appContainer.querySelector('[data-id="score-table-container"]');
+                if(!reportContentEl || !radarCanvasEl || !barCanvasEl || !scoreTableContainer) return;
+                
+                reportContentEl.innerHTML = this.state.finalReport;
+                
+                const traitOrder = ['O', 'C', 'E', 'A', 'N'];
+                const labels = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'];
+                const data = traitOrder.map(t => this.state.scores[t]);
+                const interpretations = {
+                    O: {name: "Openness (Keterbukaan)", high: "Kreatif & Imajinatif", low: "Praktis & Realistis"},
+                    C: {name: "Conscientiousness (Kehati-hatian)", high: "Teratur & Disiplin", low: "Spontan & Fleksibel"},
+                    E: {name: "Extraversion (Ekstraversi)", high: "Sosial & Antusias", low: "Mandiri & Reflektif"},
+                    A: {name: "Agreeableness (Keramahan)", high: "Kooperatif & Empatik", low: "Kompetitif & Analitis"},
+                    N: {name: "Neuroticism (Stabilitas Emosi)", high: "Sensitif & Reaktif", low: "Tenang & Tahan Banting"},
+                };
+                
+                let scoreTableHTML = `<table class="w-full text-sm text-left text-slate-600"><tbody>`;
+                traitOrder.forEach((trait, i) => {
+                    const score = data[i];
+                    const level = score > 35 ? 'Tinggi' : score > 24 ? 'Sedang' : 'Rendah';
+                    const interpretation = score > 30 ? interpretations[trait].high : interpretations[trait].low;
+                    scoreTableHTML += `<tr class="border-b border-slate-200"><th class="py-2 pr-4 font-semibold">${interpretations[trait].name}</th><td class="py-2 px-4 font-bold text-lg text-slate-800">${score}</td><td class="py-2 px-4">${level} (${interpretation})</td></tr>`;
+                });
+                scoreTableHTML += `</tbody></table>`;
+                scoreTableContainer.innerHTML = scoreTableHTML;
+
+                if (this.myChartRadar) { this.myChartRadar.destroy(); }
+                this.myChartRadar = new window.Chart(radarCanvasEl.getContext('2d'), { type: 'radar', data: { labels: labels.map(l=>l.slice(0,10)+'.'), datasets: [{ label: 'Skor', data: data, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2 }] }, options: { scales: { r: { beginAtZero: true, max: 50 } }, plugins: { legend: { display: false } } } });
+
+                if (this.myChartBar) { this.myChartBar.destroy(); }
+                this.myChartBar = new window.Chart(barCanvasEl.getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Skor', data: data, backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)'], borderColor: ['rgba(255, 99, 132, 1)','rgba(54, 162, 235, 1)','rgba(255, 206, 86, 1)','rgba(75, 192, 192, 1)','rgba(153, 102, 255, 1)'], borderWidth: 1 }] }, options: { indexAxis: 'y', scales: { x: { beginAtZero: true, max: 50 } }, plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false } });
+                
+                window.scrollTo(0, 0);
+            }
+            printResult() { window.print(); }
+            async fetchAndDisplayAllResults() {
+                const container = this.appContainer.querySelector('[data-id="results-table-container"]');
+                container.innerHTML = '<p class="text-center text-slate-500">Memuat hasil...</p>';
+                try {
+                    const q = query(collection(this.db, 'artifacts', this.appId, 'public', 'data', 'ocean_results'), orderBy("timestamp", "desc"));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) { container.innerHTML = '<p class="text-center text-slate-500">Belum ada hasil tes yang masuk.</p>'; return; }
+                    let tableHTML = `<table class="w-full text-sm text-left text-slate-500"><thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr><th class="px-6 py-3">Nama</th><th class="px-6 py-3">Gender</th><th class="px-6 py-3">No. WA</th><th class="px-6 py-3 text-center">O</th><th class="px-6 py-3 text-center">C</th><th class="px-6 py-3 text-center">E</th><th class="px-6 py-3 text-center">A</th><th class="px-6 py-3 text-center">N</th><th class="px-6 py-3">Waktu</th></tr></thead><tbody>`;
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        tableHTML += `<tr class="bg-white border-b"><th class="px-6 py-4 font-medium text-slate-900">${data.name}</th><td class="px-6 py-4">${data.gender || '-'}</td><td class="px-6 py-4">${data.whatsapp || '-'}</td>${Object.values(data.scores).map(s => `<td class="px-6 py-4 text-center">${s}</td>`).join('')}<td class="px-6 py-4">${data.timestamp.toDate().toLocaleString('id-ID')}</td></tr>`;
+                    });
+                    tableHTML += `</tbody></table>`;
+                    container.innerHTML = tableHTML;
+                } catch (e) { console.error("Fetch Error: ", e); container.innerHTML = `<p class="text-center text-red-500">Gagal memuat hasil. Error: ${e.message}</p>`; }
+            }
+        }
+        
+        // Jalankan aplikasi
+        new OceanAIApp();
+    </script>
+
+</body>
+</html>
